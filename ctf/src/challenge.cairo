@@ -190,14 +190,14 @@ mod ERC20 {
 
 
 #[starknet::interface]
-trait ISwiper<TContractState> {
+trait IConMan<TContractState> {
     fn swipe(ref self: TContractState);
-    fn solved(self: @TContractState) -> bool;
+    fn depositor(self: @TContractState, addr: starknet::ContractAddress) -> bool ;
 }
 
 
 #[starknet::contract]
-mod Swiper {
+mod Stage1ConMan {
     use starknet::ContractAddress;
     use starknet::get_caller_address;
     use starknet::syscalls::deploy_syscall;
@@ -209,11 +209,11 @@ mod Swiper {
     #[storage]
     struct Storage {
         token: IERC20Dispatcher,
-        solved: bool
+        depositor: LegacyMap<ContractAddress, bool>
     }
 
     #[abi(embed_v0)]
-    impl SwiperImpl of super::ISwiper<ContractState> {
+    impl ConManImpl of super::IConMan<ContractState> {
         fn swipe(ref self: ContractState) {
             // Ensure that the caller has approved this contract to spend REQUIRED_TOKEN_AMOUNT
             let token = self.token.read();
@@ -221,7 +221,7 @@ mod Swiper {
             let this = starknet::get_contract_address();
             assert!(
                 token.allowance(caller, this) >= REQUIRED_TOKEN_AMOUNT,
-                "Swiper: insufficient allowance: you only approved {} out of {}",
+                "ConMan: insufficient allowance: you only approved {} out of {}",
                 token.allowance(caller, this),
                 REQUIRED_TOKEN_AMOUNT
             );
@@ -229,11 +229,11 @@ mod Swiper {
             // Transfer REQUIRED_TOKEN_AMOUNT from caller to this contract
             token.transfer_from(caller, this, REQUIRED_TOKEN_AMOUNT);
 
-            self.solved.write(true);
+            self.depositor.write(caller, true);
         }
 
-        fn solved(self: @ContractState) -> bool {
-            self.solved.read()
+        fn depositor(self: @ContractState, addr: ContractAddress) -> bool {
+            self.depositor.read(addr)
         }
     }
 
@@ -244,60 +244,117 @@ mod Swiper {
 }
 
 
-#[cfg(test)]
-mod test {
-    use core::serde::Serde;
-    use super::{
-        ISwiper, ISwiperDispatcher, ISwiperDispatcherTrait, Swiper, Swiper::REQUIRED_TOKEN_AMOUNT
-    };
-    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use snforge_std::{
-        declare, ContractClassTrait, spy_events, SpyOn, EventSpy, EventAssertions, test_address,
-        start_roll, stop_roll, start_warp, stop_warp, CheatTarget, start_prank, stop_prank
-    };
+
+#[starknet::interface]
+trait IStage2Unexpected<TContractState> {
+    fn deposit(ref self: TContractState);
+    fn unexpected(self: @TContractState, addr: starknet::ContractAddress) -> bool ;
+}
+
+
+#[starknet::contract]
+mod Stage2Unexpected {
     use starknet::ContractAddress;
+    use super::{IConManDispatcher, IConManDispatcherTrait};
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
-    fn USDC_TOKEN_MOCK() -> IERC20Dispatcher {
-        let usdc_contract = declare("ERC20").unwrap();
-        let name: ByteArray = "USDC Token";
-        let symbol: ByteArray = "USDC";
-        let mut constructor_calldata = array![];
-        name.serialize(ref constructor_calldata);
-        symbol.serialize(ref constructor_calldata);
+    const DEPOSIT_AMOUNT: u256 = 10;
 
-        let (contract_address, _) = usdc_contract.deploy(@constructor_calldata).unwrap();
-        let usdc_dispatcher = IERC20Dispatcher { contract_address };
-        return usdc_dispatcher;
+    #[storage]
+    struct Storage {
+        stage1: IConManDispatcher,
+        token: IERC20Dispatcher,
+        deposit: LegacyMap<ContractAddress, u256>
     }
 
-    fn SWIPER_MOCK(USDC_ADDRESS: ContractAddress) -> ISwiperDispatcher {
-        let swiper_contract = declare("Swiper").unwrap();
-        let mut constructor_calldata = array![USDC_ADDRESS.into()];
-        let (contract_address, _) = swiper_contract.deploy(@constructor_calldata).unwrap();
-        let swiper_dispatcher = ISwiperDispatcher { contract_address };
-        return swiper_dispatcher;
+    #[abi(embed_v0)]
+    impl Stage2UnexpectedImpl of super::IStage2Unexpected<ContractState> {
+        fn deposit(ref self: ContractState) {
+            // Ensure that the caller has completed stage 1
+            let caller = starknet::get_caller_address();
+            assert!(self.stage1.read().depositor(caller), "you have not solved stage 1");
+
+            // Ensure that the caller has approved this contract to spend DEPOSIT_AMOUNT
+            let token = self.token.read();
+            let this = starknet::get_contract_address();
+            assert!(
+                token.allowance(caller, this) >= DEPOSIT_AMOUNT,
+                "ConMan: insufficient allowance: you only approved {} out of {}",
+                token.allowance(caller, this),
+                DEPOSIT_AMOUNT
+            );
+
+            // Transfer DEPOSIT_AMOUNT from caller to this contract
+            assert!(token.transfer_from(caller, this, DEPOSIT_AMOUNT), "");
+ 
+            let caller_deposit = self.deposit.read(caller) + DEPOSIT_AMOUNT;
+            self.deposit.write(caller, caller_deposit);
+        }
+
+        fn unexpected(self: @ContractState, addr: ContractAddress) -> bool {
+            (self.deposit.read(addr) % DEPOSIT_AMOUNT) != 0
+        }
     }
 
-    #[test]
-    fn test_swipe() {
-        let usdc_dispatcher = USDC_TOKEN_MOCK();
-        let usdc_address = usdc_dispatcher.contract_address;
-        let swiper_dispatcher = SWIPER_MOCK(usdc_address);
-        /// DO NOT MODIFY ANY CODE ABOVE
+    #[constructor]
+    fn constructor(ref self: ContractState, token: ContractAddress, stage1addr: ContractAddress) {
+        self.token.write(IERC20Dispatcher { contract_address: token });
+        self.stage1.write(IConManDispatcher { contract_address: stage1addr });
+    }
+}
 
 
-        //////////////////////////////////////
-        ///  YOUR SOLUTION GOES HERE 
-        //////////////////////////////////////
+#[starknet::interface]
+trait IReward<TContractState> {
+    fn balance(self: @TContractState) -> u256;
+}
 
 
+#[starknet::contract]
+mod Stage3Reward {
+    use core::serde::Serde;
+    use core::result::ResultTrait;
+    use starknet::contract_address_const;
+    use starknet::ContractAddress;
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use super::{IStage2UnexpectedDispatcher, IStage2UnexpectedDispatcherTrait};
 
-        /// DO NOT MODIFY ANY CODE BELOW
-        assert!(
-            swiper_dispatcher.solved() == true,
-            "\n\n\n\n You have not solved this challenge \n\n\n\n"
-        );
+    #[storage]
+    struct Storage {
+        reward_token: IERC20Dispatcher,
+        stage2: IStage2UnexpectedDispatcher
+    }
 
-        print!("\n\n\n\n CHALLENGE COMPLETED SUCCESSFULLY!!! \n\n\n\n")
+    #[abi(embed_v0)]    
+    impl RewardImpl of super::IReward<ContractState> {
+        fn balance(self: @ContractState) -> u256{
+
+            let caller = starknet::get_caller_address();
+            if caller.is_non_zero(){
+                assert!(self.stage2.read().unexpected(caller), "you have not solved stage 2");
+            }
+
+            let addr = self.reward_token.read().contract_address;
+            let selector = selector!("transfer");
+
+            let mut calldata: Array<felt252> = array![];
+            let recipient = starknet::get_caller_address();
+            let amount = self.reward_token.read().balance_of(starknet::get_contract_address());
+            recipient.serialize(ref calldata);
+            amount.serialize(ref calldata);
+
+            let _ 
+                = starknet::syscalls::call_contract_syscall(addr, selector, calldata.span()).unwrap();   
+
+            return self.reward_token.read().balance_of(starknet::get_contract_address());
+        }
+
+    }
+
+
+    #[constructor]
+    fn constructor(ref self: ContractState, reward_token: ContractAddress, stage2addr: ContractAddress) {
+        self.reward_token.write(IERC20Dispatcher { contract_address: reward_token });
+        self.stage2.write(IStage2UnexpectedDispatcher { contract_address: stage2addr });
     }
 }
