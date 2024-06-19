@@ -190,9 +190,9 @@ mod ERC20 {
 
 
 #[starknet::interface]
-trait IConMan<TContractState> {
+trait IStage1ConMan<TContractState> {
     fn swipe(ref self: TContractState);
-    fn depositor(self: @TContractState, addr: starknet::ContractAddress) -> bool ;
+    fn depositor(self: @TContractState, addr: starknet::ContractAddress) -> bool;
 }
 
 
@@ -213,7 +213,7 @@ mod Stage1ConMan {
     }
 
     #[abi(embed_v0)]
-    impl ConManImpl of super::IConMan<ContractState> {
+    impl ConManImpl of super::IStage1ConMan<ContractState> {
         fn swipe(ref self: ContractState) {
             // Ensure that the caller has approved this contract to spend REQUIRED_TOKEN_AMOUNT
             let token = self.token.read();
@@ -244,25 +244,24 @@ mod Stage1ConMan {
 }
 
 
-
 #[starknet::interface]
 trait IStage2Unexpected<TContractState> {
     fn deposit(ref self: TContractState);
-    fn unexpected(self: @TContractState, addr: starknet::ContractAddress) -> bool ;
+    fn unexpected(self: @TContractState, addr: starknet::ContractAddress) -> bool;
 }
 
 
 #[starknet::contract]
 mod Stage2Unexpected {
     use starknet::ContractAddress;
-    use super::{IConManDispatcher, IConManDispatcherTrait};
+    use super::{IStage1ConManDispatcher, IStage1ConManDispatcherTrait};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
     const DEPOSIT_AMOUNT: u256 = 10;
 
     #[storage]
     struct Storage {
-        stage1: IConManDispatcher,
+        stage1: IStage1ConManDispatcher,
         token: IERC20Dispatcher,
         deposit: LegacyMap<ContractAddress, u256>
     }
@@ -286,7 +285,7 @@ mod Stage2Unexpected {
 
             // Transfer DEPOSIT_AMOUNT from caller to this contract
             assert!(token.transfer_from(caller, this, DEPOSIT_AMOUNT), "");
- 
+
             let caller_deposit = self.deposit.read(caller) + DEPOSIT_AMOUNT;
             self.deposit.write(caller, caller_deposit);
         }
@@ -299,7 +298,7 @@ mod Stage2Unexpected {
     #[constructor]
     fn constructor(ref self: ContractState, token: ContractAddress, stage1addr: ContractAddress) {
         self.token.write(IERC20Dispatcher { contract_address: token });
-        self.stage1.write(IConManDispatcher { contract_address: stage1addr });
+        self.stage1.write(IStage1ConManDispatcher { contract_address: stage1addr });
     }
 }
 
@@ -325,12 +324,11 @@ mod Stage3Reward {
         stage2: IStage2UnexpectedDispatcher
     }
 
-    #[abi(embed_v0)]    
+    #[abi(embed_v0)]
     impl RewardImpl of super::IReward<ContractState> {
-        fn balance(self: @ContractState) -> u256{
-
+        fn balance(self: @ContractState) -> u256 {
             let caller = starknet::get_caller_address();
-            if caller.is_non_zero(){
+            if caller.is_non_zero() {
                 assert!(self.stage2.read().unexpected(caller), "you have not solved stage 2");
             }
 
@@ -343,17 +341,18 @@ mod Stage3Reward {
             recipient.serialize(ref calldata);
             amount.serialize(ref calldata);
 
-            let _ 
-                = starknet::syscalls::call_contract_syscall(addr, selector, calldata.span()).unwrap();   
+            let _ = starknet::syscalls::call_contract_syscall(addr, selector, calldata.span())
+                .unwrap();
 
             return self.reward_token.read().balance_of(starknet::get_contract_address());
         }
-
     }
 
 
     #[constructor]
-    fn constructor(ref self: ContractState, reward_token: ContractAddress, stage2addr: ContractAddress) {
+    fn constructor(
+        ref self: ContractState, reward_token: ContractAddress, stage2addr: ContractAddress
+    ) {
         self.reward_token.write(IERC20Dispatcher { contract_address: reward_token });
         self.stage2.write(IStage2UnexpectedDispatcher { contract_address: stage2addr });
     }
