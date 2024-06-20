@@ -1,0 +1,93 @@
+[31m   ____          _         [39m
+[31m  |    \ ___ ___| |___ _ _ [39m
+[31m  |  |  | -_| . | | . | | |[39m
+[31m  |____/|___|  _|_|___|_  |[39m
+[31m            |_|       |___|[39m
+[35m
+Declaring Prize...
+
+[39m
+[35m- Class Hash: [39m 0x74ea9560a142179b0afeedf6cae8a8435d67258473c7900cbcf6779d849e660
+[35m- Tx Hash: [39m Already declared
+[32m
+Deploying CTF Prize (PURR) ERC20 Token ... 
+
+[39m
+[32mTx hash: [39m https://sepolia.voyager.online/tx/0xfe0cf79d492b8f8040251024955410845d0fdd0b33a2ac5f64980f91f50f5)
+[32mContract Address: [39m 0x5f3efe0b4493cd63bafb010fdcfcd58264d6f5aeed3a3fcac39870786ee406c 
+
+
+[35m
+Declaring Charity (CHA) ERC20...
+
+[39m
+[35m- Class Hash: [39m 0x5d048d00b2561bd594572cddb1d9fd0bebcc0c4b65bfae20fbea84338ee12d5
+[35m- Tx Hash: [39m Already declared
+[32m
+Deploying Charity (CHA) ERC20 ... 
+
+[39m
+[32mTx hash: [39m https://sepolia.voyager.online/tx/0x4628838d476aa931686033208dd3bae3cdbe26570f78e808f2b42cbc04a7dbd)
+[32mContract Address: [39m 0x26dbc5f09e101a5739eadbd526934cf92025c72ca0cd0f936cb6d82354844b5 
+
+
+[35m
+Declaring Stage1...
+
+[39m
+[35m- Class Hash: [39m 0x6f34d17146849bcd1a4c73a5a44de6ae8b75b2a3da827b939cae376290875c5
+[35m- Tx Hash: [39m Already declared
+[32m
+Deploying Stage1 ... 
+
+[39m
+[32mTx hash: [39m https://sepolia.voyager.online/tx/0x2edf42972102536660ec6d30f478f8e7b9947638e0101cfdcdc761a161ab098)
+[32mContract Address: [39m 0x5036543fe098a2fdc3d8d7bfd2bdfed5388ea8dd2d1f1beb8367594a5038c5f 
+
+
+ 
+
+ Minting 50000000000000000000 prize tokens to 0x5036543fe098a2fdc3d8d7bfd2bdfed5388ea8dd2d1f1beb8367594a5038c5f
+ 
+
+ [object Object]
+[35m
+Declaring Stage2...
+
+[39m
+[35m- Class Hash: [39m 0x485b8b534fc00c1072f04e38f32f91656751a39a95c7b8af48e73a92ff8e85d
+[35m- Tx Hash: [39m https://sepolia.voyager.online/tx/0x7f38b1c0c85278844c7e76d84d2e19815d396a80df51e2c93f6d58384aabc97)
+[32m
+Deploying Stage2 ... 
+
+[39m
+[32mTx hash: [39m https://sepolia.voyager.online/tx/0x598097f4b08d4719638c53f35cddeff91f2395225ee3e2b90a2e0012955b0d5)
+[32mContract Address: [39m 0x7a7322360b859889c1f72d11856c4f5b0b1785901abaa6609cec399c2e7c24e 
+
+
+ 
+
+ Minting 150000000000000000000 prize tokens to 0x7a7322360b859889c1f72d11856c4f5b0b1785901abaa6609cec399c2e7c24e
+ 
+
+ [object Object]
+[35m
+Declaring Stage3...
+
+[39m
+[35m- Class Hash: [39m 0x7f10d4c2af7b306410b471056c218eea0cfe33944b52ebd099d2982146c4310
+[35m- Tx Hash: [39m https://sepolia.voyager.online/tx/0x7fe1b5e25c6d952fbee8ce920b376e6a893d5628790768e64f60c8c4df37e99)
+[32m
+Deploying Stage3 ... 
+
+[39m
+[32mTx hash: [39m https://sepolia.voyager.online/tx/0x5b98830e94828a91a70947e9ff6daeb6eb02e7f01dc3fb8e03aa3586c69bf19)
+[32mContract Address: [39m 0xed53ea834e8fad7b5399dfa90d2fe1e4415815f72c10199163f5e66af9216b 
+
+
+ 
+
+ Minting 300000000000000000000 prize tokens to 0xed53ea834e8fad7b5399dfa90d2fe1e4415815f72c10199163f5e66af9216b
+ 
+
+ [object Object]
